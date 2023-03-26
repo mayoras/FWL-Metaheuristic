@@ -1,4 +1,5 @@
 import numpy as np
+from collections import Counter
 
 
 def is_float(s):
@@ -11,3 +12,7 @@ def is_float(s):
 
 def euclidean_dist(sample1: np.ndarray, sample2: np.ndarray) -> float:
     return np.sqrt(np.sum((sample1 - sample2) ** 2))
+
+
+def most_common(arr: np.ndarray) -> float:
+    return Counter(arr).most_common(1)[0][0]
