@@ -15,22 +15,27 @@ class Dataset:
     - labels = List[strings]
     '''
 
-    def __init__(self, ds_name, normalized=False):
+    def __init__(self, ds_name: str, normalized=False):
         '''
         - ds_name: dataset's unique name
         - normalized: Whether or not to normalize the dataset. Defaults to False
         '''
 
-        DATA_DIR_PATH = os.environ.get("DATA_DIR_PATH")
+        DATA_DIR_PATH: (str | None) = os.environ.get("DATA_DIR_PATH")
+
+        if not DATA_DIR_PATH:
+            print(f'ENV Variable {DATA_DIR_PATH} not found')
+            print(f'try: export DATA_DIR_PATH=</path/to/data>')
+            exit(1)
 
         # Dataset name
         self.ds_name = ds_name
 
         # {1: ndarray, 2: ndarray, ...}
-        self.partitions = {}
+        self.partitions: dict[int, np.ndarray] = {}
 
         # {1: ndarray, 2: ndarray, ...}
-        self.classes = {}
+        self.classes: dict[int, np.ndarray] = {}
 
         # Iterate over dir path
         dir = os.fsencode(DATA_DIR_PATH)
@@ -80,15 +85,15 @@ class Dataset:
                 max_values - min_values
             )
 
-    def ctof(self, c):
+    def ctof(self, c: str) -> float:
         '''
         String to float function.
 
         if c is not numerical, ad-hoc solution for diabetes:
-            - True for 'tested_positive'
-            - False for 'tested_negative'
+            - 1. for 'tested_positive'
+            - 0. for 'tested_negative'
         '''
         if is_float(c):
             return float(c)
         else:
-            return True if 'positive' in c else False
+            return 1.0 if 'positive' in c else 0.0
