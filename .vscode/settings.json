@@ -1,4 +1,5 @@
 {
   "python.formatting.provider": "black",
-  "python.formatting.blackArgs": ["--skip-string-normalization"]
+  "python.formatting.blackArgs": ["--skip-string-normalization"],
+  "python.analysis.typeCheckingMode": "basic"
 }
