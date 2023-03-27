@@ -68,6 +68,9 @@ class Dataset:
 
                 self.partitions[part_num] = np.array(features, dtype=np.float64)
                 self.classes[part_num] = np.array(classes)
+
+        self.num_features = self.partitions[1].shape[1]
+
         if normalized:
             self.normalize()
 
