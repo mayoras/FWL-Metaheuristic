@@ -10,7 +10,7 @@ class KNN:
         self.X_train = X
         self.y_train = y
 
-    def classify(self, samples: np.ndarray) -> np.ndarray:
+    def predict(self, samples: np.ndarray) -> np.ndarray:
         classes: list[float] = []
         for s in samples:
             # get the distances of each training sample to the unclassified sample
