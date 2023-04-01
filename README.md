@@ -9,7 +9,10 @@ https://mh2223.danimolina.net/notebook.html
 | Organize datasets in a more ergonomic way (classes or some sort) | **OK**          |
 | Implement 1-NN Classifier                                        | **OK**          |
 | Measure performance of classifier 1NN                            | **OK**          |
-| Implement FWL data structure                                     | Not implemented |
-| Implement _Greedy_ algorithm                                     | Not implemented |
+| Implement _Greedy_ algorithm                                     | In process      |
 | Implement LS algorithm                                           | Not implemented |
 | Validity check tests                                             | Not implemented |
+
+## Notes
+
+- There's a possibility that a neighbour is exactly the same as the example being evaluated, in that case we will ignore this.
