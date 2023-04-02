@@ -234,6 +234,6 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
             'Media',
         ]
     )
-    cols = np.array(['%_clas', '%_red', 'Fit.', 'T'])
+    cols = np.array(['%_clas', '%_red', 'Fit.', 'T(s)'])
     df = pd.DataFrame(measures, index=rows, columns=cols)
     return df
