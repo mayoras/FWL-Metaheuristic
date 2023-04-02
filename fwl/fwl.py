@@ -23,6 +23,11 @@ def are_equal(e1: np.ndarray, e2: np.ndarray) -> np.bool_:
     return (e1 == e2).all()
 
 
+def one_kk(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
+    # 1-KK original
+    return np.ones(x_train.shape[1])
+
+
 def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     '''
     @brief learn weights from a training set using a Greedy approach
