@@ -185,9 +185,10 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
             [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.partitions)]
         )
 
-        start = time.time()
+        ### Learn weights
+        start = time.monotonic()
         w = fwl_algo(x_train=x_train, y_train=y_train)
-        end = time.time()
+        end = time.monotonic()
 
         # Testing stage
         test_part = ds.partitions[test_part_key]
