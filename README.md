@@ -9,7 +9,8 @@ https://mh2223.danimolina.net/notebook.html
 | Organize datasets in a more ergonomic way (classes or some sort) | **OK**          |
 | Implement 1-NN Classifier                                        | **OK**          |
 | Measure performance of classifier 1NN                            | **OK**          |
-| Implement _Greedy_ algorithm                                     | In process      |
+| Implement _Greedy_ algorithm                                     | **OK** for now  |
+| Implement validation                                             | **OK** for now  |
 | Implement LS algorithm                                           | Not implemented |
 | Validity check tests                                             | Not implemented |
 
