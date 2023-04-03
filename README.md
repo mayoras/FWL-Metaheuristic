@@ -11,7 +11,7 @@ https://mh2223.danimolina.net/notebook.html
 | Measure performance of classifier 1NN                            | **OK**          |
 | Implement _Greedy_ algorithm                                     | **OK** for now  |
 | Implement validation                                             | **OK** for now  |
-| Implement LS algorithm                                           | In Process...   |
+| Implement LS algorithm                                           | Needs Test...   |
 | Validity check tests                                             | Not implemented |
 
 ## Notes
