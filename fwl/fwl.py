@@ -5,27 +5,61 @@ import time
 
 from fwl.dataset import Dataset
 from fwl.knn import KNN
-from fwl.helpers import euclidean_dist
+from fwl.helpers import euclidean_dist, are_equal
 from typing import Callable
 
+from sklearn.metrics import accuracy_score
+
 ALPHA = 0.3
+MEAN = 0.0
+VAR = 0.3
+
+######################################################
+###################### UTILS #########################
+######################################################
 
 
-def hit_rate(num_failed: int, total: int) -> float:
-    return 100 * ((total - num_failed) / total)
+def hit_rate(num_hits: int, total: int) -> float:
+    return 100 * (num_hits / total)
 
 
 def red_rate(num_ignored: int, num_features: int) -> float:
     return 100 * (num_ignored / num_features)
 
 
-def are_equal(e1: np.ndarray, e2: np.ndarray) -> np.bool_:
-    return (e1 == e2).all()
+def T(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, float]:
+    clf.fit(X=x_train, y=y_train, w=w)
+
+    predictions = clf.predict(samples=x_test)
+
+    # Test predictions
+    # num_failed = 0
+    # for _inp, prediction, label in zip(x_test, predictions, y_test):
+    #     if prediction != label:
+    #         num_failed += 1
+    num_hits = int(accuracy_score(y_test, predictions, normalize=False))
+
+    num_feats_ignored = len(w[w < 0.1])
+
+    # Calc measurements
+    hit_r = hit_rate(num_hits=num_hits, total=len(x_test))
+    red_r = red_rate(num_ignored=num_feats_ignored, num_features=x_test.shape[1])
+    return ALPHA * hit_r + (1 - ALPHA) * red_r, hit_r, red_r
+
+
+######################################################
+####################### 1-NN #########################
+######################################################
 
 
 def one_kk(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     # 1-KK original
     return np.ones(x_train.shape[1])
+
+
+######################################################
+###################### RELIEF ########################
+######################################################
 
 
 def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
@@ -154,6 +188,11 @@ def relief_fast(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     return w
 
 
+######################################################
+################ 5-FOLD CROSS VALIDATION #############
+######################################################
+
+
 def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     '''
     5-fold cross validation for a dataset
@@ -194,36 +233,37 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         test_part = ds.partitions[test_part_key]
         test_y = ds.classes[test_part_key]
 
-        # Fit the model
-        clf.fit(X=x_train, y=y_train, w=w)
+        # # Fit the model
+        # clf.fit(X=x_train, y=y_train, w=w)
 
-        # Get predictions with  weights
-        predictions = clf.predict(test_part)
+        # # Get predictions with  weights
+        # predictions = clf.predict(test_part)
 
-        # Test predictions
-        num_failed = 0
-        for _inp, prediction, label in zip(test_part, predictions, test_y):
-            if prediction != label:
-                # print(
-                #     inp, 'has been classified as ', prediction, 'and should be ', label
-                # )
-                num_failed += 1
-        # num_success = len(test_part) - num_failed
+        # # Test predictions
+        # num_failed = 0
+        # for _inp, prediction, label in zip(test_part, predictions, test_y):
+        #     if prediction != label:
+        #         # print(
+        #         #     inp, 'has been classified as ', prediction, 'and should be ', label
+        #         # )
+        #         num_failed += 1
+        # # num_success = len(test_part) - num_failed
 
-        num_feats_ignored = len(w[w < 0.1])
+        # num_feats_ignored = len(w[w < 0.1])
 
-        # Calc measurements
-        hit_r = hit_rate(num_failed=num_failed, total=len(test_part))
-        reduction_rate = red_rate(
-            num_ignored=num_feats_ignored, num_features=test_part.shape[1]
-        )
-        fitness = ALPHA * hit_r + (1 - ALPHA) * reduction_rate
+        # # Calc measurements
+        # hit_r = hit_rate(num_failed=num_failed, total=len(test_part))
+        # reduction_rate = red_rate(
+        #     num_ignored=num_feats_ignored, num_features=test_part.shape[1]
+        # )
+        # fitness = ALPHA * hit_r + (1 - ALPHA) * reduction_rate
+        fitness, hit_r, red_r = T(x_train, y_train, test_part, test_y, w, clf)
         fwl_elapsed_time = end - start
 
         # print(f'Fitness({[num for num in w]}) = {fitness}')
 
         measures[test_part_key - 1] = np.array(
-            [hit_r, reduction_rate, fitness, fwl_elapsed_time]
+            [hit_r, red_r, fitness, fwl_elapsed_time]
         )
 
     # Calc mean of each statistic
@@ -243,3 +283,82 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     cols = np.array(['%_clas', '%_red', 'Fit.', 'T(s)'])
     df = pd.DataFrame(measures, index=rows, columns=cols)
     return df
+
+
+######################################################
+#################### LOCAL SEARCH ####################
+######################################################
+
+
+def gen_new_neighbour(w: np.ndarray, gene: int) -> np.ndarray:
+    z = np.random.normal(0.0, VAR)
+    new_w = w.copy()
+    new_w[gene] += z
+
+    # Trunc the feature if necessary
+    if new_w[gene] < 0:
+        new_w[gene] = 0.0
+    elif new_w[gene] > 1:
+        new_w[gene] = 1.0
+
+    return new_w
+
+
+def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
+    '''
+    @brief learn weights from a training set using Best-First Local Search
+    @param x_train training examples
+    @param y_train training classes
+    @return w weights learned
+    '''
+
+    clf = KNN(k=1)
+    eval_T = lambda x_train, y_train, w, clf: T(
+        x_train, y_train, x_train, y_train, w, clf
+    )
+
+    # Initial random solution and initial best
+    w = np.random.uniform(0, 1, x_train.shape[1])
+    t, _, _ = eval_T(x_train, y_train, w, clf)
+
+    # Number of T evaluations
+    num_evals = 1
+
+    # Number of neighbours generated
+    num_gen_neigh = 0
+
+    # First iteration, generate new neighbours
+    gen_new_neigh = True
+
+    # Bind to avoid bugs
+    genes_to_mutate = np.array([])
+
+    # Repeat until termination criterion
+    while num_evals < 15000 and num_gen_neigh < 20 * (x_train.shape[1]):
+        print('number of neighbours generated:', num_gen_neigh)
+        if gen_new_neigh:
+            # Permute order of genes to mutate
+            genes_to_mutate = np.random.permutation(np.arange(x_train.shape[1]))
+            gen_new_neigh = False
+        else:
+            # Generate a new neighbour
+            new_neigh = gen_new_neighbour(w, genes_to_mutate[0])
+            genes_to_mutate = genes_to_mutate[1:]
+            num_gen_neigh += 1
+
+            # Check improvement
+            t_new_n, _, _ = eval_T(x_train, y_train, new_neigh, clf)
+            if t_new_n > t:
+                t = t_new_n
+                w = new_neigh
+
+                num_evals += 1
+
+                # Repeat again for this new solution
+                gen_new_neigh = True
+
+        # if there's no more genes that improve, repeat
+        if genes_to_mutate.shape[0] == 0:
+            gen_new_neigh = True
+
+    return w
