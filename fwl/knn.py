@@ -1,5 +1,5 @@
 import numpy as np
-from fwl.helpers import euclidean_dist, most_common
+from fwl.helpers import euclidean_dist, most_common, are_equal
 
 
 class KNN:
@@ -15,7 +15,11 @@ class KNN:
         classes: list[float] = []
         for s in samples:
             # get the distances of each training sample to the unclassified sample
-            distances = [euclidean_dist(x, s, self.w_train) for x in self.X_train]
+            distances = []
+            for x in self.X_train:
+                # Leave-one-out
+                if not are_equal(x, s):
+                    distances.append(euclidean_dist(x, s, self.w_train))
 
             k_idx = np.argsort(distances)[: self.k]
 
