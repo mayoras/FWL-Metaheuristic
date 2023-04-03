@@ -10,7 +10,7 @@ from typing import Callable
 
 from sklearn.metrics import accuracy_score
 
-ALPHA = 0.3
+ALPHA = 0.8
 MEAN = 0.0
 VAR = 0.3
 
