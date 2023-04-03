@@ -16,3 +16,7 @@ def euclidean_dist(sample1: np.ndarray, sample2: np.ndarray, w: np.ndarray) -> f
 
 def most_common(arr: np.ndarray) -> float:
     return Counter(arr).most_common(1)[0][0]
+
+
+def are_equal(e1: np.ndarray, e2: np.ndarray) -> np.bool_:
+    return (e1 == e2).all()
