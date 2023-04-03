@@ -1,6 +1,6 @@
 ## Validate solutions
 
-https://mh2223.danimolina.net/notebook.html
+https://mh2223.danimolina.net/testsol.html
 
 ## TODO
 
