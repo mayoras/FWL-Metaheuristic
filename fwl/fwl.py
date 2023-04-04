@@ -172,31 +172,9 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         test_part = ds.partitions[test_part_key]
         test_y = ds.classes[test_part_key]
 
-        # # Fit the model
-        # clf.fit(X=x_train, y=y_train, w=w)
-
-        # # Get predictions with  weights
-        # predictions = clf.predict(test_part)
-
-        # # Test predictions
-        # num_failed = 0
-        # for _inp, prediction, label in zip(test_part, predictions, test_y):
-        #     if prediction != label:
-        #         # print(
-        #         #     inp, 'has been classified as ', prediction, 'and should be ', label
-        #         # )
-        #         num_failed += 1
-        # # num_success = len(test_part) - num_failed
-
-        # num_feats_ignored = len(w[w < 0.1])
-
-        # # Calc measurements
-        # hit_r = hit_rate(num_failed=num_failed, total=len(test_part))
-        # reduction_rate = red_rate(
-        #     num_ignored=num_feats_ignored, num_features=test_part.shape[1]
-        # )
-        # fitness = ALPHA * hit_r + (1 - ALPHA) * reduction_rate
+        # Take measures
         fitness, hit_r, red_r = T(x_train, y_train, test_part, test_y, w, clf)
+
         fwl_elapsed_time = end - start
 
         measures[test_part_key - 1] = np.array(
@@ -206,7 +184,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     # Calc mean of each statistic
     measures[-1] = np.sum(measures[:-1], axis=0) / (measures.shape[0] - 1)
 
-    # return the pandas DataFrame
+    # return the df
     rows = np.array(
         [
             'Partición 1',

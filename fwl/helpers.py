@@ -20,3 +20,7 @@ def most_common(arr: np.ndarray) -> float:
 
 def are_equal(e1: np.ndarray, e2: np.ndarray) -> np.bool_:
     return (e1 == e2).all()
+
+
+def str_solution(w: np.ndarray) -> str:
+    return ",".join([str(f) for f in w])
