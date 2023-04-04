@@ -5,7 +5,6 @@ import time
 
 from fwl.dataset import Dataset
 from fwl.knn import KNN
-from fwl.helpers import euclidean_dist, are_equal
 from typing import Callable
 
 from sklearn.metrics import accuracy_score
@@ -28,15 +27,15 @@ def red_rate(num_ignored: int, num_features: int) -> float:
 
 
 def T(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, float]:
+    '''
+    Calc target function.
+    Returns fitness, hit rate and reduction rate
+    '''
     clf.fit(X=x_train, y=y_train, w=w)
 
-    predictions = clf.predict(samples=x_test)
+    predictions = clf.predict(examples=x_test)
 
     # Test predictions
-    # num_failed = 0
-    # for _inp, prediction, label in zip(x_test, predictions, y_test):
-    #     if prediction != label:
-    #         num_failed += 1
     num_hits = int(accuracy_score(y_test, predictions, normalize=False))
 
     num_feats_ignored = len(w[w < 0.1])
@@ -53,7 +52,7 @@ def T(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, floa
 
 
 def one_kk(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
-    # 1-KK original
+    # 1-KK original, unweighted classifier
     return np.ones(x_train.shape[1])
 
 
@@ -73,70 +72,12 @@ def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     # Initialize W to 0
     w = np.zeros(x_train.shape[1], dtype=np.float32)
 
-    # For each sample in the training set
-    for idx, (e, c) in enumerate(zip(x_train, y_train)):
-        # Look for the nearest enemy and friend
-        enemy = None
-        friend = None
-
-        min_dist_enemy = min_dist_friend = sys.maxsize
-        for e_p, c_p in zip(x_train, y_train):
-            dist = euclidean_dist(e, e_p, np.ones(x_train.shape[1]))
-
-            # Enemy
-            if (
-                # Not the same example
-                not are_equal(e, e_p)
-                # Leave-one-out
-                and c_p != c
-                and dist < min_dist_enemy
-            ):
-                min_dist_enemy = dist
-                enemy = e_p
-            # Friend
-            elif (
-                # Not the same example
-                not are_equal(e, e_p)
-                # Leave-one-out
-                and c_p == c
-                and dist < min_dist_friend
-            ):
-                min_dist_friend = dist
-                friend = e_p
-
-        # Update the weights with the component-wise distances from enemy and friend
-        w = w + np.abs(e - enemy) - np.abs(e - friend)
-
-    # Normalize weights
-    w_max = np.max(w)
-
-    for idx, w_i in enumerate(w):
-        if w_i < 0:
-            w[idx] = 0
-        else:
-            w[idx] = w_i / w_max
-
-    return w
-
-
-def relief_fast(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
-    '''
-    @brief learn weights from a training set using a Greedy approach
-    @param x_train training examples
-    @param y_train training classes
-    @return w weights learned
-    '''
-
-    # Initialize W to 0
-    w = np.zeros(x_train.shape[1], dtype=np.float32)
-
-    # Precalculate all pair-wise distances:
+    # Precalculate all pair-wise distances with de L-norm:
     # Res: https://sparrow.dev/pairwise-distance-in-numpy/
     dists = np.linalg.norm(
         x_train[:, np.newaxis, :] - x_train[np.newaxis, :, :], axis=-1
     )
 
-    ####### TODO: Maybe do this a little bit faster, maybe with new axes or something like that
     # Get all nearest friends and enemies
     friends = []
     enemies = []
@@ -198,7 +139,9 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     5-fold cross validation for a dataset
     @param ds: Dataset used to train and validate
     @param fwl_algo: Feature-Weight-Learning algorithm used to fit feature weights
+    @return a `pandas.DataFrame` object containing relevant measures about algorithm evaluation on dataset
     '''
+
     clf = KNN(1)
 
     '''
@@ -206,10 +149,6 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     - 4 measures: succ_rate, miss_rate, fitness, elapsed_time
     - 5 partitions (folds) of dataset
     '''
-    # measures = np.array(
-    #     [np.zeros(4), np.zeros(4), np.zeros(4), np.zeros(4), np.zeros(4)],
-    #     dtype=np.float32,
-    # )
     measures = np.array(np.repeat(0, 6 * 4), dtype=np.float32).reshape((6, 4))
 
     for test_part_key in range(1, 6):
@@ -259,8 +198,6 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         # fitness = ALPHA * hit_r + (1 - ALPHA) * reduction_rate
         fitness, hit_r, red_r = T(x_train, y_train, test_part, test_y, w, clf)
         fwl_elapsed_time = end - start
-
-        # print(f'Fitness({[num for num in w]}) = {fitness}')
 
         measures[test_part_key - 1] = np.array(
             [hit_r, red_r, fitness, fwl_elapsed_time]
@@ -313,13 +250,13 @@ def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     '''
 
     clf = KNN(k=1)
-    eval_T = lambda x_train, y_train, w, clf: T(
+    eval_sol = lambda x_train, y_train, w, clf: T(
         x_train, y_train, x_train, y_train, w, clf
     )
 
     # Initial random solution and initial best
     w = np.random.uniform(0, 1, x_train.shape[1])
-    t, _, _ = eval_T(x_train, y_train, w, clf)
+    t, _, _ = eval_sol(x_train, y_train, w, clf)
 
     # Number of T evaluations
     num_evals = 1
@@ -335,7 +272,6 @@ def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
 
     # Repeat until termination criterion
     while num_evals < 15000 and num_gen_neigh < 20 * (x_train.shape[1]):
-        print('number of neighbours generated:', num_gen_neigh)
         if gen_new_neigh:
             # Permute order of genes to mutate
             genes_to_mutate = np.random.permutation(np.arange(x_train.shape[1]))
@@ -347,7 +283,7 @@ def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
             num_gen_neigh += 1
 
             # Check improvement
-            t_new_n, _, _ = eval_T(x_train, y_train, new_neigh, clf)
+            t_new_n, _, _ = eval_sol(x_train, y_train, new_neigh, clf)
             if t_new_n > t:
                 t = t_new_n
                 w = new_neigh
