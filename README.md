@@ -11,10 +11,17 @@ https://mh2223.danimolina.net/testsol.html
 | Measure performance of classifier 1NN                            | **OK**          |
 | Implement _Greedy_ algorithm                                     | **OK** for now  |
 | Implement validation                                             | **OK** for now  |
-| Accelerate LS algorithm                                          | In process...   |
 | Implement LS algorithm                                           | Needs Test...   |
 | Validity check tests                                             | Not implemented |
+
+## IDEAS
+
+- `fwl.py:78` Maybe do friends and enemies precalculation a bit faster
 
 ## Notes
 
 - There's a possibility that a neighbour is exactly the same as the example being evaluated, in that case we will ignore this.
+
+# References
+
+- Precalculate pair-wise distances of examples: https://sparrow.dev/pairwise-distance-in-numpy/
