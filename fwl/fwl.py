@@ -26,7 +26,7 @@ def red_rate(num_ignored: int, num_features: int) -> float:
     return 100 * (num_ignored / num_features)
 
 
-def T(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, float]:
+def F(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, float]:
     '''
     Calc target function.
     Returns fitness, hit rate and reduction rate
@@ -173,7 +173,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         test_y = ds.classes[test_part_key]
 
         # Take measures
-        fitness, hit_r, red_r = T(x_train, y_train, test_part, test_y, w, clf)
+        fitness, hit_r, red_r = F(x_train, y_train, test_part, test_y, w, clf)
 
         fwl_elapsed_time = end - start
 
@@ -228,7 +228,7 @@ def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     '''
 
     clf = KNN(k=1)
-    eval_sol = lambda x_train, y_train, w, clf: T(
+    eval_sol = lambda x_train, y_train, w, clf: F(
         x_train, y_train, x_train, y_train, w, clf
     )
 
