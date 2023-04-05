@@ -206,7 +206,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
 
 
 def gen_new_neighbour(w: np.ndarray, gene: int) -> np.ndarray:
-    z = np.random.normal(0.0, VAR)
+    z = np.random.normal(MEAN, VAR)
     new_w = w.copy()
     new_w[gene] += z
 
