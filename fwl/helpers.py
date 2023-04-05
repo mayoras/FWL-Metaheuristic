@@ -10,8 +10,8 @@ def is_float(s):
         return False
 
 
-def euclidean_dist(sample1: np.ndarray, sample2: np.ndarray, w: np.ndarray) -> float:
-    return np.sqrt(np.sum(w * ((sample1 - sample2) ** 2), axis=1))
+def euclidean_dist(e1: np.ndarray, e2: np.ndarray, w: np.ndarray) -> float:
+    return np.sqrt(np.sum(w * ((e1 - e2) ** 2), axis=1))
 
 
 def most_common(arr: np.ndarray) -> float:
