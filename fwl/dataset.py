@@ -21,11 +21,11 @@ class Dataset:
         - normalized: Whether or not to normalize the dataset. Defaults to False
         '''
 
-        DATA_DIR_PATH: (str | None) = os.environ.get("DATA_DIR_PATH")
+        MH_DATA_DIR_PATH: (str | None) = os.environ.get("MH_DATA_DIR_PATH")
 
-        if not DATA_DIR_PATH:
-            print(f'ENV Variable {DATA_DIR_PATH} not found')
-            print(f'try: export DATA_DIR_PATH=</path/to/data>')
+        if not MH_DATA_DIR_PATH:
+            print(f'ENV Variable {MH_DATA_DIR_PATH} not found')
+            print(f'try: export MH_DATA_DIR_PATH=</path/to/data>')
             exit(1)
 
         # Dataset name
@@ -38,7 +38,7 @@ class Dataset:
         self.classes: dict[int, np.ndarray] = {}
 
         # Iterate over dir path
-        dir = os.fsencode(DATA_DIR_PATH)
+        dir = os.fsencode(MH_DATA_DIR_PATH)
         for file in os.listdir(dir):
             filename = os.fsdecode(file)
 
@@ -49,7 +49,7 @@ class Dataset:
             # features and classes read per file
             features, classes = [], []
 
-            filepath = os.path.join(DATA_DIR_PATH, filename)
+            filepath = os.path.join(MH_DATA_DIR_PATH, filename)
             with open(filepath, 'r') as f:
                 # print(f.name)
                 part_num = int(re.findall('_([1-5]{1}).arff', f.name.split('/')[-1])[0])
