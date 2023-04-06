@@ -6,6 +6,7 @@ import time
 from fwl.dataset import Dataset
 from fwl.knn import KNN
 from typing import Callable
+import fwl.helpers as helpers
 
 from sklearn.metrics import accuracy_score
 
@@ -72,50 +73,26 @@ def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     # Initialize W to 0
     w = np.zeros(x_train.shape[1], dtype=np.float32)
 
-    # Precalculate all pair-wise distances with de L-norm:
-    # Res: https://sparrow.dev/pairwise-distance-in-numpy/
-    dists = np.linalg.norm(
-        x_train[:, np.newaxis, :] - x_train[np.newaxis, :, :], axis=-1
-    )
-
-    # Get all nearest friends and enemies
-    friends = []
-    enemies = []
     for i in range(x_train.shape[0]):
-        friend = None
-        enemy = None
-        for j in range(dists[i].shape[0]):
-            # Look for nearest friend for ith example
-            min_dist_f = sys.maxsize
-            min_dist_e = sys.maxsize
+        dist = np.sqrt(np.sum((x_train - x_train[i]) ** 2, axis=1))
 
-            if (
-                dists[i, j] > 0
-                and dists[i, j] < min_dist_f
-                and y_train[i] == y_train[j]
-            ):
-                min_dist_f = dists[i, j]
-                friend = x_train[j]
-            if (
-                dists[i, j] > 0
-                and dists[i, j] < min_dist_e
-                and y_train[i] != y_train[j]
-            ):
-                min_dist_e = dists[i, j]
-                enemy = x_train[j]
-        friends.append(friend)
-        enemies.append(enemy)
-    friends = np.array(friends)
-    enemies = np.array(enemies)
+        # get all nearest examples except itself with dist 0 - Leave-one-out
+        nearest_examples = np.argsort(dist)[1:]
 
-    # For each sample in the training set
-    for i in range(x_train.shape[0]):
-        # Look for the nearest enemy and friend
-        enemy = enemies[i]
-        friend = friends[i]
-
-        # Update the weights with the component-wise distances from enemy and friend
-        w = w + np.abs(x_train[i] - enemy) - np.abs(x_train[i] - friend)
+        friend = enemy = None
+        for nn in nearest_examples:
+            if y_train[nn] == y_train[i]:
+                friend = nn
+                break
+        for nn in nearest_examples:
+            if y_train[nn] != y_train[i]:
+                enemy = nn
+                break
+        w = (
+            w
+            + np.abs(x_train[i] - x_train[enemy])
+            - np.abs(x_train[i] - x_train[friend])
+        )
 
     # Normalize weights
     w_max = np.max(w)
@@ -167,6 +144,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         start = time.monotonic()
         w = fwl_algo(x_train=x_train, y_train=y_train)
         end = time.monotonic()
+        print(f"Pesos {test_part_key}:", helpers.str_solution(w))
 
         # Testing stage
         test_part = ds.partitions[test_part_key]
@@ -198,6 +176,50 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     cols = np.array(['%_clas', '%_red', 'Fit.', 'T(s)'])
     df = pd.DataFrame(measures, index=rows, columns=cols)
     return df
+
+
+def validate2(ds, algorithm):
+    clf = KNN(1)
+    for test_part_key in range(1, 6):
+        # Training stage
+        x_train = np.concatenate(
+            [
+                ds.partitions[i]
+                for i in filter(lambda x: x != test_part_key, ds.partitions)
+            ]
+        )
+        y_train = np.concatenate(
+            [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.partitions)]
+        )
+
+        ### Learn weights
+        start = time.monotonic()
+        w = algorithm(x_train=x_train, y_train=y_train)
+        end = time.monotonic()
+
+        # Testing stage
+        test_part = ds.partitions[test_part_key]
+        test_y = ds.classes[test_part_key]
+
+        # Take measures
+        fitness_test, hit_r_test, red_r_test = F(
+            x_train, y_train, test_part, test_y, w, clf
+        )
+        fitness_train, hit_r_train, red_r_train = F(
+            x_train, y_train, x_train, y_train, w, clf
+        )
+
+        print(f'{test_part_key}-----------------------------------------')
+
+        print("Train %:", hit_r_train, red_r_train)
+        print("Test %:", hit_r_test, red_r_test)
+        print("Reduccion % Test:", red_r_train)
+        print("Reduccion % Training:", red_r_test)
+        print("Fitness Training:", fitness_train)
+        print("Fitness Test:", fitness_test)
+        print("Pesos:", helpers.str_solution(w))
+
+        print('-----------------------------------------')
 
 
 ######################################################
@@ -234,9 +256,9 @@ def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
 
     # Initial random solution and initial best
     w = np.random.uniform(0, 1, x_train.shape[1])
-    t, _, _ = eval_sol(x_train, y_train, w, clf)
+    f, _, _ = eval_sol(x_train, y_train, w, clf)
 
-    # Number of T evaluations
+    # Number of F evaluations
     num_evals = 1
 
     # Number of neighbours generated
@@ -261,9 +283,9 @@ def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
             num_gen_neigh += 1
 
             # Check improvement
-            t_new_n, _, _ = eval_sol(x_train, y_train, new_neigh, clf)
-            if t_new_n > t:
-                t = t_new_n
+            f_new_n, _, _ = eval_sol(x_train, y_train, new_neigh, clf)
+            if f_new_n > f:
+                f = f_new_n
                 w = new_neigh
 
                 num_evals += 1
