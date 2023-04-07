@@ -62,7 +62,7 @@ def one_kk(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
 ######################################################
 
 
-def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
+def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     '''
     @brief learn weights from a training set using a Greedy approach
     @param x_train training examples
@@ -198,7 +198,7 @@ def gen_new_neighbour(w: np.ndarray, gene: int) -> np.ndarray:
     return new_w
 
 
-def ls(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
+def busqueda_local(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     '''
     @brief learn weights from a training set using Best-First Local Search
     @param x_train training examples
