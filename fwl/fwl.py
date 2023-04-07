@@ -29,8 +29,8 @@ def red_rate(num_ignored: int, num_features: int) -> float:
 
 def F(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, float]:
     '''
-    Calc target function.
-    Returns fitness, hit rate and reduction rate
+    Calc target function F(w).
+    Returns fitness along with hit rate and reduction rate for convenience
     '''
     clf.fit(X=x_train, y=y_train, w=w)
 
@@ -139,7 +139,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
             ]
         )
         y_train = np.concatenate(
-            [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.partitions)]
+            [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.classes)]
         )
 
         ### Learn weights
