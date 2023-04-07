@@ -30,8 +30,16 @@ def main():
     parser.add_argument(
         '--algorithm', type=str, default=False, help='choose the algorithm'
     )
+    parser.add_argument('--list-algo', default=False, action='store_true')
 
     args = parser.parse_args()
+
+    # List available algorithms
+    if args.list_algo:
+        print('Available Algorithms:')
+        for a in ALGORITHMS:
+            print('->', a)
+        return
 
     # Dataset
     if args.dataset:
