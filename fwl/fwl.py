@@ -39,10 +39,10 @@ def F(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, floa
     # Test predictions
     num_hits = int(accuracy_score(y_test, predictions, normalize=False))
 
-    num_feats_ignored = w[w < 0.1].size
+    num_feats_ignored = len(w[w < 0.1])
 
     # Calc measurements
-    hit_r = hit_rate(num_hits=num_hits, total=x_test.shape[0])
+    hit_r = hit_rate(num_hits=num_hits, total=y_test.shape[0])
     red_r = red_rate(num_ignored=num_feats_ignored, num_features=x_test.shape[1])
     return ALPHA * hit_r + (1 - ALPHA) * red_r, hit_r, red_r
 
@@ -101,7 +101,7 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
 
     for idx, w_i in enumerate(w):
         if w_i < 0:
-            w[idx] = 0
+            w[idx] = 0.0
         else:
             w[idx] = w_i / w_max
 
