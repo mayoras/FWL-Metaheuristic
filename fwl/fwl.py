@@ -5,8 +5,8 @@ import time
 
 from fwl.dataset import Dataset
 from fwl.knn import KNN
+from fwl.helpers import euclidean_dist, str_solution
 from typing import Callable
-import fwl.helpers as helpers
 
 from sklearn.metrics import accuracy_score
 
@@ -74,16 +74,19 @@ def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     w = np.zeros(x_train.shape[1], dtype=np.float32)
 
     for i in range(x_train.shape[0]):
-        dist = np.sqrt(np.sum((x_train - x_train[i]) ** 2, axis=1))
+        # dist = np.sqrt(np.sum((x_train - x_train[i]) ** 2, axis=1))
+        dist = euclidean_dist(x_train, x_train[i], np.ones_like(w))
 
         # get all nearest examples except itself with dist 0 - Leave-one-out
         nearest_examples = np.argsort(dist)[1:]
 
+        # identify the nearest friend
         friend = enemy = None
         for nn in nearest_examples:
             if y_train[nn] == y_train[i]:
                 friend = nn
                 break
+        # identify the nearest enemy
         for nn in nearest_examples:
             if y_train[nn] != y_train[i]:
                 enemy = nn
@@ -144,7 +147,6 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         start = time.monotonic()
         w = fwl_algo(x_train=x_train, y_train=y_train)
         end = time.monotonic()
-        print(f"Pesos {test_part_key}:", helpers.str_solution(w))
 
         # Testing stage
         test_part = ds.partitions[test_part_key]
@@ -176,50 +178,6 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     cols = np.array(['%_clas', '%_red', 'Fit.', 'T(s)'])
     df = pd.DataFrame(measures, index=rows, columns=cols)
     return df
-
-
-def validate2(ds, algorithm):
-    clf = KNN(1)
-    for test_part_key in range(1, 6):
-        # Training stage
-        x_train = np.concatenate(
-            [
-                ds.partitions[i]
-                for i in filter(lambda x: x != test_part_key, ds.partitions)
-            ]
-        )
-        y_train = np.concatenate(
-            [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.partitions)]
-        )
-
-        ### Learn weights
-        start = time.monotonic()
-        w = algorithm(x_train=x_train, y_train=y_train)
-        end = time.monotonic()
-
-        # Testing stage
-        test_part = ds.partitions[test_part_key]
-        test_y = ds.classes[test_part_key]
-
-        # Take measures
-        fitness_test, hit_r_test, red_r_test = F(
-            x_train, y_train, test_part, test_y, w, clf
-        )
-        fitness_train, hit_r_train, red_r_train = F(
-            x_train, y_train, x_train, y_train, w, clf
-        )
-
-        print(f'{test_part_key}-----------------------------------------')
-
-        print("Train %:", hit_r_train, red_r_train)
-        print("Test %:", hit_r_test, red_r_test)
-        print("Reduccion % Test:", red_r_train)
-        print("Reduccion % Training:", red_r_test)
-        print("Fitness Training:", fitness_train)
-        print("Fitness Test:", fitness_test)
-        print("Pesos:", helpers.str_solution(w))
-
-        print('-----------------------------------------')
 
 
 ######################################################
