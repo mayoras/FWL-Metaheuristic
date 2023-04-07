@@ -74,7 +74,6 @@ def relief(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     w = np.zeros(x_train.shape[1], dtype=np.float32)
 
     for i in range(x_train.shape[0]):
-        # dist = np.sqrt(np.sum((x_train - x_train[i]) ** 2, axis=1))
         dist = euclidean_dist(x_train, x_train[i], np.ones_like(w))
 
         # get all nearest examples except itself with dist 0 - Leave-one-out
