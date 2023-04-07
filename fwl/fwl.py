@@ -39,10 +39,10 @@ def F(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, floa
     # Test predictions
     num_hits = int(accuracy_score(y_test, predictions, normalize=False))
 
-    num_feats_ignored = len(w[w < 0.1])
+    num_feats_ignored = w[w < 0.1].size
 
     # Calc measurements
-    hit_r = hit_rate(num_hits=num_hits, total=len(x_test))
+    hit_r = hit_rate(num_hits=num_hits, total=x_test.shape[0])
     red_r = red_rate(num_ignored=num_feats_ignored, num_features=x_test.shape[1])
     return ALPHA * hit_r + (1 - ALPHA) * red_r, hit_r, red_r
 
@@ -149,11 +149,11 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
 
         # Testing stage
         test_part = ds.partitions[test_part_key]
-        test_y = ds.classes[test_part_key]
+        test_class = ds.classes[test_part_key]
 
         # Take measures for training and test
         _, hit_r_train, _ = F(x_train, y_train, x_train, y_train, w, clf)
-        fitness, hit_r_test, red_r = F(x_train, y_train, test_part, test_y, w, clf)
+        fitness, hit_r_test, red_r = F(x_train, y_train, test_part, test_class, w, clf)
 
         fwl_elapsed_time = end - start
 
@@ -175,7 +175,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
             'Media',
         ]
     )
-    cols = np.array(['Train (%)', 'Test (%)', '%_red', 'Fit.', 'T(s)'])
+    cols = np.array(['Train (%)', 'Test (%)', 'Red. (%)', 'Fit.', 'T(s)'])
     df = pd.DataFrame(measures, index=rows, columns=cols)
     return df
 
