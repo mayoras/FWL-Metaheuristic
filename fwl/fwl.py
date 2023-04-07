@@ -185,6 +185,10 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
 ######################################################
 
 
+def gen_random_solution(num_features: int) -> np.ndarray:
+    return np.random.uniform(0, 1, num_features)
+
+
 def gen_new_neighbour(w: np.ndarray, gene: int) -> np.ndarray:
     z = np.random.normal(MEAN, np.sqrt(VAR))
     new_w = w.copy()
@@ -213,7 +217,7 @@ def busqueda_local(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     )
 
     # Initial random solution and initial best
-    w = np.random.uniform(0, 1, x_train.shape[1])
+    w = gen_random_solution(x_train.shape[1])
     f, _, _ = eval_sol(x_train, y_train, w, clf)
 
     # Number of F evaluations
