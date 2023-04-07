@@ -125,10 +125,10 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
 
     '''
     Measures table
-    - 4 measures: succ_rate, miss_rate, fitness, elapsed_time
+    - 4 measures: hit_rate(training), hit_rate(test), reduction_rate, fitness, elapsed_time
     - 5 partitions (folds) of dataset
     '''
-    measures = np.array(np.repeat(0, 6 * 4), dtype=np.float32).reshape((6, 4))
+    measures = np.array(np.repeat(0, 6 * 5), dtype=np.float32).reshape((6, 5))
 
     for test_part_key in range(1, 6):
         # Training stage
@@ -151,13 +151,14 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         test_part = ds.partitions[test_part_key]
         test_y = ds.classes[test_part_key]
 
-        # Take measures
-        fitness, hit_r, red_r = F(x_train, y_train, test_part, test_y, w, clf)
+        # Take measures for training and test
+        _, hit_r_train, _ = F(x_train, y_train, x_train, y_train, w, clf)
+        fitness, hit_r_test, red_r = F(x_train, y_train, test_part, test_y, w, clf)
 
         fwl_elapsed_time = end - start
 
         measures[test_part_key - 1] = np.array(
-            [hit_r, red_r, fitness, fwl_elapsed_time]
+            [hit_r_train, hit_r_test, red_r, fitness, fwl_elapsed_time]
         )
 
     # Calc mean of each statistic
@@ -174,7 +175,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
             'Media',
         ]
     )
-    cols = np.array(['%_clas', '%_red', 'Fit.', 'T(s)'])
+    cols = np.array(['Train (%)', 'Test (%)', '%_red', 'Fit.', 'T(s)'])
     df = pd.DataFrame(measures, index=rows, columns=cols)
     return df
 
@@ -185,7 +186,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
 
 
 def gen_new_neighbour(w: np.ndarray, gene: int) -> np.ndarray:
-    z = np.random.normal(MEAN, VAR)
+    z = np.random.normal(MEAN, np.sqrt(VAR))
     new_w = w.copy()
     new_w[gene] += z
 
