@@ -78,7 +78,6 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
         dist = euclidean_dist(x_train, x_train[i], np.ones_like(w, dtype=np.float32))
 
         # get all nearest examples except itself with dist 0 - Leave-one-out
-        # nearest_examples = np.argsort(dist)[1:]
         nearest_examples = np.argsort(dist)
         nearest_examples = nearest_examples[dist[nearest_examples] > 0.0]
 

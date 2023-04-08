@@ -20,8 +20,7 @@ def score(dataset, alg, seeds):
         for a in ALGORITHMS:
             print(a.upper().replace('-', ' '))
             score = fwl.validate(ds=dataset, fwl_algo=ALGORITHMS[a], seeds=seeds)
-            print(score)
-            print('-' * 35)
+            print(score + '\n')
 
 
 def main():
