@@ -19,13 +19,13 @@ class KNN:
         if examples.shape == self.X_train.shape and np.allclose(examples, self.X_train):
             predicting_training = True
         for e in examples:
-            distances = euclidean_dist(self.X_train, e, self.w_train)
+            dist = euclidean_dist(self.X_train, e, self.w_train)
 
             # get k-nearest neighbours. Leave-one-out (in training) by filtering distances greater than 0 (that is the example itself)
             if predicting_training:
-                k_idx = np.argsort(distances)[1 : self.k + 1]
+                k_idx = np.argsort(dist)[1 : self.k + 1]
             else:
-                k_idx = np.argsort(distances)[: self.k]
+                k_idx = np.argsort(dist)[: self.k]
 
             # if k > 1, the class assigned to the example is the mode of the k classes
             classes.append(most_common(self.y_train[k_idx]))
