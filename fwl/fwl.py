@@ -34,9 +34,10 @@ def F(x_train, y_train, x_test, y_test, w, clf: KNN) -> tuple[float, float, floa
     '''
     clf.fit(X=x_train, y=y_train, w=w)
 
+    # Make predictions - Classify
     predictions = clf.predict(examples=x_test)
 
-    # Test predictions
+    # Test predictions - Get the number of correctly classified examples
     num_hits = int(accuracy_score(y_test, predictions, normalize=False))
 
     num_feats_ignored = len(w[w < 0.1])
@@ -74,10 +75,12 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     w = np.zeros(x_train.shape[1], dtype=np.float32)
 
     for i in range(x_train.shape[0]):
-        dist = euclidean_dist(x_train, x_train[i], np.ones_like(w))
+        dist = euclidean_dist(x_train, x_train[i], np.ones_like(w, dtype=np.float32))
 
         # get all nearest examples except itself with dist 0 - Leave-one-out
-        nearest_examples = np.argsort(dist)[1:]
+        # nearest_examples = np.argsort(dist)[1:]
+        nearest_examples = np.argsort(dist)
+        nearest_examples = nearest_examples[dist[nearest_examples] > 0.0]
 
         # identify the nearest friend
         friend = enemy = None
@@ -108,9 +111,9 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     return w
 
 
-######################################################
-################ 5-FOLD CROSS VALIDATION #############
-######################################################
+#########################################################
+################ 5-FOLD CROSS VALIDATION ################
+#########################################################
 
 
 def validate(ds: Dataset, fwl_algo: Callable, seeds: list[int]) -> pd.DataFrame:

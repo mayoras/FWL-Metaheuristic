@@ -10,7 +10,7 @@ def is_float(s):
         return False
 
 
-def euclidean_dist(e1: np.ndarray, e2: np.ndarray, w: np.ndarray) -> np.ndarray | float:
+def euclidean_dist(e1: np.ndarray, e2: np.ndarray, w: np.ndarray):
     return np.sqrt(np.sum(w * ((e1 - e2) ** 2), axis=1))
 
 
