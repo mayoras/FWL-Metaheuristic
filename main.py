@@ -11,15 +11,15 @@ ALGORITHMS = {
 }
 
 
-def score(dataset, alg):
+def score(dataset, alg, seeds):
     if len(alg) == 1:
         print(alg[0].upper().replace('-', ' '))
-        score = fwl.validate(ds=dataset, fwl_algo=ALGORITHMS[alg[0]])
+        score = fwl.validate(ds=dataset, fwl_algo=ALGORITHMS[alg[0]], seeds=seeds)
         print(score)
     else:
         for a in ALGORITHMS:
             print(a.upper().replace('-', ' '))
-            score = fwl.validate(ds=dataset, fwl_algo=ALGORITHMS[a])
+            score = fwl.validate(ds=dataset, fwl_algo=ALGORITHMS[a], seeds=seeds)
             print(score)
             print('-' * 35)
 
@@ -30,9 +30,31 @@ def main():
     parser.add_argument(
         '--algorithm', type=str, default=False, help='choose the algorithm'
     )
+    parser.add_argument(
+        '--seeds',
+        type=str,
+        default=False,
+        help='Seeds for the pseudorandom generator in each execution',
+    )
     parser.add_argument('--list-algo', default=False, action='store_true')
 
     args = parser.parse_args()
+
+    # Seed
+    if args.seeds:
+        seed_list = args.seeds.split(',')
+        # General seed
+        if len(seed_list) == 1:
+            seeds = [seed_list[0] for _ in range(5)]
+        # Invalid number of seeds
+        elif len(seed_list) != 5:
+            print(
+                'Invalid number of seeds.\nIntroduce at least 5 seeds OR specify just one general seed.'
+            )
+            exit(1)
+        seeds = [int(seed) for seed in args.seeds.split(',')]
+    else:
+        seeds = [0 for _ in range(5)]
 
     # List available algorithms
     if args.list_algo:
@@ -54,7 +76,7 @@ def main():
 
         data = [diabetes_ds, ozone_ds, spectf_ds]
 
-    # Algorithm
+    # Algorithm, and execution
     if args.algorithm:
         alg = [args.algorithm]
     else:
@@ -63,11 +85,11 @@ def main():
 
     if len(data) == 1:
         print(f'-------------- {data[0].ds_name} --------------')
-        score(data[0], alg)
+        score(data[0], alg, seeds)
     else:
         for d in data:
             print(f'-------------- {d.ds_name} --------------')
-            score(d, alg)
+            score(d, alg, seeds)
 
 
 if __name__ == '__main__':

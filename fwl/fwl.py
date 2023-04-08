@@ -5,7 +5,7 @@ import time
 
 from fwl.dataset import Dataset
 from fwl.knn import KNN
-from fwl.helpers import euclidean_dist, str_solution
+from fwl.helpers import euclidean_dist, str_solution, get_seed
 from typing import Callable
 
 from sklearn.metrics import accuracy_score
@@ -113,7 +113,7 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
 ######################################################
 
 
-def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
+def validate(ds: Dataset, fwl_algo: Callable, seeds: list[int]) -> pd.DataFrame:
     '''
     5-fold cross validation for a dataset
     @param ds: Dataset used to train and validate
@@ -130,8 +130,20 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     '''
     measures = np.array(np.repeat(0, 6 * 5), dtype=np.float32).reshape((6, 5))
 
+    # Either use a general seed for all executions or different seeds per execution
+    unique_seed = False
+    if len(seeds) == 1:
+        unique_seed = True
+        np.random.seed(seeds[0])
+
     for test_part_key in range(1, 6):
-        # Training stage
+        # Initialize seed
+        if not unique_seed:
+            seed = get_seed(seeds, test_part_key - 1)
+            np.random.seed(seed=seed)
+
+        ###### Training stage ######
+        # Join 4 partitions for training
         x_train = np.concatenate(
             [
                 ds.partitions[i]
@@ -147,7 +159,7 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
         w = fwl_algo(x_train=x_train, y_train=y_train)
         end = time.monotonic()
 
-        # Testing stage
+        ###### Testing stage ######
         test_part = ds.partitions[test_part_key]
         test_class = ds.classes[test_part_key]
 
@@ -167,12 +179,12 @@ def validate(ds: Dataset, fwl_algo: Callable) -> pd.DataFrame:
     # return the df
     rows = np.array(
         [
-            'Partición 1',
-            'Partición 2',
-            'Partición 3',
-            'Partición 4',
-            'Partición 5',
-            'Media',
+            'Part. #1',
+            'Part. #2',
+            'Part. #3',
+            'Part. #4',
+            'Part. #5',
+            'Avg.',
         ]
     )
     cols = np.array(['Train (%)', 'Test (%)', 'Red. (%)', 'Fit.', 'T(s)'])
@@ -192,7 +204,7 @@ def gen_random_solution(num_features: int) -> np.ndarray:
 def gen_new_neighbour(w: np.ndarray, gene: int) -> np.ndarray:
     z = np.random.normal(MEAN, np.sqrt(VAR))
     new_w = w.copy()
-    new_w[gene] += z
+    new_w[gene] = new_w[gene] + z
 
     # Trunc the feature if necessary
     if new_w[gene] < 0:
@@ -217,7 +229,7 @@ def busqueda_local(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     )
 
     # Initial random solution and initial best
-    w = gen_random_solution(x_train.shape[1])
+    w = gen_random_solution(x_train.shape[1]).astype(np.float32)
     f, _, _ = eval_sol(x_train, y_train, w, clf)
 
     # Number of F evaluations

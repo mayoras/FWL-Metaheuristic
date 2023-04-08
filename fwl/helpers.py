@@ -23,5 +23,9 @@ def are_equal(e1: np.ndarray, e2: np.ndarray) -> np.bool_:
     return (e1 == e2).all()
 
 
+def get_seed(seeds: list[int], num_exec: int) -> int:
+    return seeds[num_exec]
+
+
 def str_solution(w: np.ndarray) -> str:
     return ",".join([str(f) for f in w])
