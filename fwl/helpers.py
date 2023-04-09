@@ -18,14 +18,5 @@ def most_common(arr: np.ndarray) -> float:
     return Counter(arr).most_common(1)[0][0]
 
 
-# TODO: dump this thing
-def are_equal(e1: np.ndarray, e2: np.ndarray) -> np.bool_:
-    return (e1 == e2).all()
-
-
-def get_seed(seeds: list[int], num_exec: int) -> int:
-    return seeds[num_exec]
-
-
 def str_solution(w: np.ndarray) -> str:
     return ",".join([str(f) for f in w])
