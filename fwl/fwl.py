@@ -5,7 +5,7 @@ import time
 
 from fwl.dataset import Dataset
 from fwl.knn import KNN
-from fwl.helpers import euclidean_dist, str_solution, get_seed
+from fwl.helpers import euclidean_dist
 from typing import Callable
 
 from sklearn.metrics import accuracy_score
@@ -77,9 +77,11 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
     for i in range(x_train.shape[0]):
         dist = euclidean_dist(x_train, x_train[i], np.ones_like(w, dtype=np.float32))
 
+        # Leave-one-out by modifying distance to INF
+        dist[i] = sys.maxsize
+
         # get all nearest examples except itself with dist 0 - Leave-one-out
         nearest_examples = np.argsort(dist)
-        nearest_examples = nearest_examples[dist[nearest_examples] > 0.0]
 
         # identify the nearest friend
         friend = enemy = None
@@ -108,90 +110,6 @@ def greedy(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
             w[idx] = w_i / w_max
 
     return w
-
-
-#########################################################
-################ 5-FOLD CROSS VALIDATION ################
-#########################################################
-
-
-def validate(ds: Dataset, fwl_algo: Callable, seeds: list[int]) -> pd.DataFrame:
-    '''
-    5-fold cross validation for a dataset
-    @param ds: Dataset used to train and validate
-    @param fwl_algo: Feature-Weight-Learning algorithm used to fit feature weights
-    @return a `pandas.DataFrame` object containing relevant measures about algorithm evaluation on dataset
-    '''
-
-    clf = KNN(1)
-
-    '''
-    Measures table
-    - 4 measures: hit_rate(training), hit_rate(test), reduction_rate, fitness, elapsed_time
-    - 5 partitions (folds) of dataset
-    '''
-    measures = np.array(np.repeat(0, 6 * 5), dtype=np.float32).reshape((6, 5))
-
-    # Either use a general seed for all executions or different seeds per execution
-    unique_seed = False
-    if len(seeds) == 1:
-        unique_seed = True
-        np.random.seed(seeds[0])
-
-    for test_part_key in range(1, 6):
-        # Initialize seed
-        if not unique_seed:
-            seed = get_seed(seeds, test_part_key - 1)
-            np.random.seed(seed=seed)
-
-        ###### Training stage ######
-        # Join 4 partitions for training
-        x_train = np.concatenate(
-            [
-                ds.partitions[i]
-                for i in filter(lambda x: x != test_part_key, ds.partitions)
-            ]
-        )
-        y_train = np.concatenate(
-            [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.classes)]
-        )
-
-        ### Learn weights
-        start = time.monotonic()
-        w = fwl_algo(x_train=x_train, y_train=y_train)
-        end = time.monotonic()
-
-        ###### Testing stage ######
-        test_part = ds.partitions[test_part_key]
-        test_class = ds.classes[test_part_key]
-
-        # Take measures for training and test
-        _, hit_r_train, _ = F(x_train, y_train, x_train, y_train, w, clf)
-        fitness, hit_r_test, red_r = F(x_train, y_train, test_part, test_class, w, clf)
-
-        fwl_elapsed_time = end - start
-
-        measures[test_part_key - 1] = np.array(
-            [hit_r_train, hit_r_test, red_r, fitness, fwl_elapsed_time]
-        )
-
-    # Calc mean of each statistic
-    measures[-1] = np.sum(measures[:-1], axis=0) / (measures.shape[0] - 1)
-
-    # return the df
-    rows = np.array(
-        [
-            'Part. #1',
-            'Part. #2',
-            'Part. #3',
-            'Part. #4',
-            'Part. #5',
-            'Avg.',
-        ]
-    )
-    cols = np.array(['Train (%)', 'Test (%)', 'Red. (%)', 'Fit.', 'T(s)'])
-    df = pd.DataFrame(measures, index=rows, columns=cols)
-    return df
 
 
 ######################################################
@@ -274,3 +192,80 @@ def busqueda_local(x_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
             gen_new_neigh = True
 
     return w
+
+
+#########################################################
+################ 5-FOLD CROSS VALIDATION ################
+#########################################################
+
+
+def validate(ds: Dataset, fwl_algo: Callable, seed) -> pd.DataFrame:
+    '''
+    5-fold cross validation for a dataset
+    @param ds: Dataset used to train and validate
+    @param fwl_algo: Feature-Weight-Learning algorithm used to fit feature weights
+    @return a `pandas.DataFrame` object containing relevant measures about algorithm evaluation on dataset
+    '''
+
+    # 1-NN clasifier instance
+    clf = KNN(1)
+
+    # Initialize seed
+    np.random.seed(seed=seed)
+
+    '''
+    Measures table
+    - 4 measures: hit_rate(training), hit_rate(test), reduction_rate, fitness, elapsed_time
+    - 5 partitions (folds) of dataset
+    '''
+    measures = np.array(np.repeat(0, 6 * 5), dtype=np.float32).reshape((6, 5))
+
+    for test_part_key in range(1, 6):
+        ###### Training stage ######
+        # Join 4 partitions for training
+        x_train = np.concatenate(
+            [
+                ds.partitions[i]
+                for i in filter(lambda x: x != test_part_key, ds.partitions)
+            ]
+        )
+        y_train = np.concatenate(
+            [ds.classes[i] for i in filter(lambda x: x != test_part_key, ds.classes)]
+        )
+
+        ### Learn weights
+        start = time.monotonic()
+        w = fwl_algo(x_train=x_train, y_train=y_train)
+        end = time.monotonic()
+
+        ###### Testing stage ######
+        test_part = ds.partitions[test_part_key]
+        test_class = ds.classes[test_part_key]
+
+        # Take measures for training and test
+        _, hit_r_train, _ = F(x_train, y_train, x_train, y_train, w, clf)
+        fitness, hit_r_test, red_r = F(x_train, y_train, test_part, test_class, w, clf)
+
+        fwl_elapsed_time = end - start
+
+        measures[test_part_key - 1] = np.array(
+            [hit_r_train, hit_r_test, red_r, fitness, fwl_elapsed_time]
+        )
+
+    # Calc mean of each statistic
+    measures[-1] = np.sum(measures[:-1], axis=0) / (measures.shape[0] - 1)
+
+    # return the df
+    rows = np.array(
+        [
+            'Part. #1',
+            'Part. #2',
+            'Part. #3',
+            'Part. #4',
+            'Part. #5',
+            'Avg.',
+        ]
+    )
+    cols = np.array(['Train (%)', 'Test (%)', 'Red. (%)', 'Fit.', 'T(s)'])
+    df = pd.DataFrame(measures, index=rows, columns=cols)
+    return df
