@@ -1,0 +1,15 @@
+Ficheros contenidos en la carpeta software:
+
+En el directorio BIN, podemos encontrar los siguientes ficheros:
+- "data/inst/<dataset>_<numero de particion>.arff", corresponden al conjunto de datos con los que trabaja el programa.
+- "p1", corresponde al script ejecutable bash del programa, puede ser necesario cambiar los permisos de este fichero para poder ejecutarlo.
+
+En el directorio FUENTES, nos encontramos con los siguientes ficheros:
+- "main.py", script principal que corre nuestro programa, recibe los argumentos del usuario y es el encargado de llamar a los algoritmos con estas opciones.
+- "requirements.txt", fichero de texto que incluye las dependencias del programa, como se dice en la documentación se requiere instalarlos con el gestor de paquetes PIP, ya sea en un entorno virtual o local.
+- Los ficheros contenidos en la carpeta "fwl/" son los módulos que definen las funciones que usa nuestro programa, entre ellos se incluyen:
+  - "__init__.py", conveniencia de Python para indicar que la carpeta que lo contiene se puede acceder como módulo.
+  - "dataset.py", se define la clase "Dataset" que encapsula toda la información relevante de un conjunto de datos y la organiza de una forma más conveniente.
+  - "knn.py", se define la clase "KNN" para la definición de un clasificador K-NN.
+  - "helpers.py", funciones de ayuda que comparten varios módulos.
+  - "fwl.py", incluye los algoritmos y la función de validación del problema APC (Feature Weight Learning), entre ellos el algoritmo `greedy`, `busqueda_local`, función objetivo `F`, función de validación (5fcv) `validate`, etc.
